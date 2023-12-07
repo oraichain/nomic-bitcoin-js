@@ -5,13 +5,19 @@ import {
   DepositSuccess,
 } from ".";
 
+import { networkConfig } from "./config";
+
+const receiver =
+  process.env.RECEIVER || "orai1ehmhqcn8erf3dgavrca69zgp4rtxj5kqgtcnyd";
+const sender = process.env.SENDER;
+console.log("sender: ", sender);
 const sampleGetDepositAddress = async () => {
   const config = {
-    relayers: ["https://oraibtc.relayer.orai.io:443"],
-    channel: "channel-0", // ibc between oraibtc and orai chain
-    network: "testnet",
-    receiver: "orai1ehmhqcn8erf3dgavrca69zgp4rtxj5kqgtcnyd", // bech32 address of the depositing user,
-    sender: "oraibtc1ehmhqcn8erf3dgavrca69zgp4rtxj5kqzpga4j",
+    relayers: networkConfig.RELAYERS,
+    channel: networkConfig.IBC_CHANNEL, // ibc between oraibtc and orai chain
+    network: networkConfig.NETWORK,
+    receiver, // bech32 address of the depositing user,
+    sender,
   } as DepositOptions;
 
   const btcAddressToDeposit = (await generateDepositAddress(
@@ -24,8 +30,8 @@ const sampleGetDepositAddress = async () => {
 
 const getPendingDepositsWhenFaucetingOnBtcAddress = async () => {
   const config = {
-    relayers: ["https://oraibtc.relayer.orai.io:443"],
-    receiver: "orai1ehmhqcn8erf3dgavrca69zgp4rtxj5kqgtcnyd", // orai address to check
+    relayers: networkConfig.RELAYERS,
+    receiver, // orai address to check
   };
 
   const data = await getPendingDeposits(config.relayers, config.receiver);

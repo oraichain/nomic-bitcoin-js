@@ -2,6 +2,7 @@ import * as btc from 'bitcoinjs-lib'
 import { sha256 } from 'bitcoinjs-lib/src/crypto'
 import { fromBech32, toBech32 } from '@cosmjs/encoding'
 import { Buffer } from 'buffer'
+import { userConfig } from './config'
 
 interface SigSet {
   signatories: Array<{ voting_power: number; pubkey: number[] }>
@@ -178,7 +179,7 @@ async function broadcast(
 export function deriveNomicAddress(addr: string) {
   let address = fromBech32(addr)
 
-  return toBech32('nomic', address.data)
+  return toBech32(userConfig.WALLET_PREFIX, address.data)
 }
 
 export type BitcoinNetwork = 'bitcoin' | 'testnet' | 'regtest'
@@ -345,8 +346,8 @@ export async function generateDepositAddress(
       throw new Error('Memo must be less than 256 characters')
     }
 
-    if (!ibcDest.sender.startsWith('oraibtc')) {
-      throw new Error('Sender must be a Nomic address')
+    if (!ibcDest.sender.startsWith(userConfig.WALLET_PREFIX)) {
+      throw new Error(`Sender must be a ${userConfig.WALLET_PREFIX} address`)
     }
 
     let parts = ibcDest.sourceChannel.split('-')
