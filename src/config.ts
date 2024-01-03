@@ -7,6 +7,6 @@ export const userConfig = {
 
 export const networkConfig = {
   RELAYERS: [process.env.RELAYER || "https://oraibtc.relayer.orai.io:443"],
-  IBC_CHANNEL: process.env.IBC_CHANNEL || "channel-0",
+  IBC_CHANNEL: process.env.IBC_CHANNEL || "channel-1",
   NETWORK: process.env.NETWORK || "testnet",
 };
