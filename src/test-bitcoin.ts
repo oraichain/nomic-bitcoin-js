@@ -44,7 +44,7 @@ const main = async () => {
         sender: "oraibtc1rchnkdpsxzhquu63y6r4j4t57pnc9w8ea88hue",
         sourceChannel: "channel-0",
         sourcePort: "transfer",
-        timeoutTimestamp: 1709305200000000000n
+        timeoutTimestamp: 1609305200000000000n
     }
     const script = redeemScript(sigsets, sha256(encode(ibcDest)));
 
@@ -57,14 +57,14 @@ const main = async () => {
     console.log(`Script in hex: ${script.toString("hex")}\n`)
 
     const spendAmountInSats = 10000;
-    const withdrawAmountInSats = 5000;
+    const withdrawAmountInSats = 9000;
     const feeForTransactionInSats = 1000;
 
     const psbt = new btc.Psbt({
         network: btc.networks.testnet
     })
     psbt.addInput({
-        hash: "108c03f717be19f40126fc459a1bba932121bd68649e1c8e25644931c31eec97",
+        hash: "33e118f86cc59436ab717681b72f2df0b4f356c24b5feedb0b37dc7ab22ffe4c",
         index: 0,
         witnessUtxo: {
             script: data.output!,
