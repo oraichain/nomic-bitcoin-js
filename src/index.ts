@@ -410,3 +410,12 @@ export async function generateDepositAddress(
     }
   }
 }
+
+export {
+  redeemScript,
+  SigSet,
+  IbcDest,
+  makeIbcDest,
+  encode,
+  toNetwork
+}
