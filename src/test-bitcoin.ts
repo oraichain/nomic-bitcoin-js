@@ -31,6 +31,7 @@ const makeSigsets = (xprivs: string[], voting_powers: number[], index: number, n
 }
 
 const main = async () => {
+    // This is just my test private key
     const xprivs = ["tprv8ZgxMBicQKsPdk95xiZzD8EpKc1699Q7TqCpAJevpzdxeD4s9pgXyEq8E7DW7X4htC5s4GcFG41Gr5mhjwLzHHuqfU7aedDbEiUvcyd5CcW"]
     const voting_powers = [10000000000];
     const network = btc.networks.testnet;
