@@ -31,7 +31,7 @@ const makeSigsets = (xprivs: string[], voting_powers: number[], index: number, n
 }
 
 const main = async () => {
-    const xprivs = [""]
+    const xprivs = ["tprv8ZgxMBicQKsPdk95xiZzD8EpKc1699Q7TqCpAJevpzdxeD4s9pgXyEq8E7DW7X4htC5s4GcFG41Gr5mhjwLzHHuqfU7aedDbEiUvcyd5CcW"]
     const voting_powers = [10000000000];
     const network = btc.networks.testnet;
     const sigsets = makeSigsets(xprivs, voting_powers, 0, network);
@@ -53,21 +53,30 @@ const main = async () => {
     console.log("=======================================")
     console.log(`Script in hex: ${script.toString("hex")}\n`)
 
+    const spendAmountInSats = 20000;
+    const withdrawAmountInSats = 5000;
+    const feeForTransactionInSats = 1000;
+
     const psbt = new btc.Psbt({
         network: btc.networks.testnet
     })
     psbt.addInput({
-        hash: "6ffe6c27beff6c6d1504ec099b3a56c823291e09d883e211ca75a4dd67844eea",
-        index: 0,
+        hash: "8f194c3ad8757da20b1e3cb12575629ffb2933c3be033b3aeec53beb7ef72acf",
+        index: 1,
         witnessUtxo: {
             script: data.output!,
-            value: 10000
+            value: spendAmountInSats
         },
         witnessScript: script
     })
     psbt.addOutput({
-        address: "tb1qewgfymc9ssrszh7dh202rtsgz3yjzvyyk77vzv",
-        value: 5000,
+        address: "tb1q80yacawds7fs9spcn7e6c050vprgu5e8lw83p5",
+        value: withdrawAmountInSats,
+    });
+    // add redundant amount back to previous address
+    psbt.addOutput({
+        address: data.address!,
+        value: spendAmountInSats - withdrawAmountInSats - feeForTransactionInSats,
     });
     const bip32 = BIP32Factory(ecc);
     for (const xpriv of xprivs) {
