@@ -32,17 +32,19 @@ const makeSigsets = (xprivs: string[], voting_powers: number[], index: number, n
 
 const main = async () => {
     // This is just my test private key on my local machine, not on the server
-    const xprivs = ["tprv8ZgxMBicQKsPdk95xiZzD8EpKc1699Q7TqCpAJevpzdxeD4s9pgXyEq8E7DW7X4htC5s4GcFG41Gr5mhjwLzHHuqfU7aedDbEiUvcyd5CcW"]
-    const voting_powers = [10000000000];
+    // const xprivs = ["tprv8ZgxMBicQKsPdk95xiZzD8EpKc1699Q7TqCpAJevpzdxeD4s9pgXyEq8E7DW7X4htC5s4GcFG41Gr5mhjwLzHHuqfU7aedDbEiUvcyd5CcW"
+    const xprivs = ["", ""]
+    const voting_powers = [10000000000, 10000000000];
+    const sigsetIndex = 2;
     const network = btc.networks.testnet;
-    const sigsets = makeSigsets(xprivs, voting_powers, 0, network);
+    const sigsets = makeSigsets(xprivs, voting_powers, sigsetIndex, network);
     const ibcDest: IbcDest = {
         memo: "",
         receiver: "orai1rchnkdpsxzhquu63y6r4j4t57pnc9w8ehdhedx",
         sender: "oraibtc1rchnkdpsxzhquu63y6r4j4t57pnc9w8ea88hue",
         sourceChannel: "channel-0",
         sourcePort: "transfer",
-        timeoutTimestamp: 1709276400000000000n 
+        timeoutTimestamp: 1709305200000000000n
     }
     const script = redeemScript(sigsets, sha256(encode(ibcDest)));
 
@@ -54,7 +56,7 @@ const main = async () => {
     console.log("=======================================")
     console.log(`Script in hex: ${script.toString("hex")}\n`)
 
-    const spendAmountInSats = 20000;
+    const spendAmountInSats = 10000;
     const withdrawAmountInSats = 5000;
     const feeForTransactionInSats = 1000;
 
@@ -62,8 +64,8 @@ const main = async () => {
         network: btc.networks.testnet
     })
     psbt.addInput({
-        hash: "8f194c3ad8757da20b1e3cb12575629ffb2933c3be033b3aeec53beb7ef72acf",
-        index: 1,
+        hash: "108c03f717be19f40126fc459a1bba932121bd68649e1c8e25644931c31eec97",
+        index: 0,
         witnessUtxo: {
             script: data.output!,
             value: spendAmountInSats
@@ -82,14 +84,12 @@ const main = async () => {
     const bip32 = BIP32Factory(ecc);
     for (const xpriv of xprivs) {
         const node = bip32.fromBase58(xpriv, btc.networks.testnet);
-        psbt.signInput(0, node.derive(0))
+        psbt.signInput(0, node.derive(sigsetIndex))
     }
     psbt.finalizeInput(0, (inputIndex: number, psbtInput: any) => {
-        console.log(psbtInput)
-        console.log("Input", psbtInput.partialSig.map((item: any) => item.signature)[0])
         const redeemPayment = btc.payments.p2wsh({
             redeem: {
-                input: btc.script.compile(psbtInput.partialSig.map((item: any) => item.signature)),
+                input: btc.script.compile(psbtInput.partialSig.map((item: any) => item.signature).reverse()), // Make sure to be putted in a correct orders
                 output: psbtInput.witnessScript
             }
         });
@@ -107,7 +107,6 @@ const main = async () => {
     console.log(`Broadcasting Transaction Hex: ${tx.toHex()}`);
     const txid = await broadcast(tx.toHex());
     console.log(`Success! Txid is ${txid}`);
-
 }
 
 main();
