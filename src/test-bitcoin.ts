@@ -88,6 +88,25 @@ const main = async () => {
     }
     psbt.finalizeInput(0, (inputIndex: number, psbtInput: any) => {
         const redeemPayment = btc.payments.p2wsh({
+            /**
+             * Nếu như thứ tự tạo redeem_script là
+             * pubkey1 OP_CHECKSIG
+             * OP_IF
+             * ...
+             * OP_SWAP
+             * pubkey2 OP_CHECKSIG
+             * OP_IF
+             * ...
+             * OP_SWAP
+             * pubkey3 OP_CHECKSIG
+             * OP_IF
+             * ...
+             * 
+             * Thì thứ tự put signature vào input sẽ phải là
+             * signature pubkey 3 - index 0
+             * signature pubkey 2 - index 1
+             * signature pubkey 1 - index 2
+             */
             redeem: {
                 input: btc.script.compile(psbtInput.partialSig.map((item: any) => item.signature).reverse()), // Make sure to be putted in a correct orders
                 output: psbtInput.witnessScript
