@@ -185,17 +185,21 @@ export function deriveNomicAddress(addr: string) {
 export type BitcoinNetwork = 'bitcoin' | 'testnet' | 'regtest'
 const oneDaySeconds = 86400
 
-function makeIbcDest(opts: DepositOptions): IbcDest {
-  let now = Date.now()
+export function calcIbcTimeoutTimestamp(date: Date, transferTimeoutOffsetSeconds?: number) {
+  const now = date.getTime();
   let timeoutTimestampMs
-  if (typeof opts.transferTimeoutOffsetSeconds === 'undefined') {
+  if (typeof transferTimeoutOffsetSeconds === 'undefined') {
     timeoutTimestampMs =
       now + oneDaySeconds * 5 * 1000 - (now % (60 * 60 * 1000))
   } else {
-    timeoutTimestampMs = now + opts.transferTimeoutOffsetSeconds * 1000
+    timeoutTimestampMs = now + transferTimeoutOffsetSeconds * 1000
   }
 
-  const timeoutTimestamp = BigInt(timeoutTimestampMs) * 1000000n
+  return BigInt(timeoutTimestampMs) * 1000000n
+}
+
+function makeIbcDest(opts: DepositOptions): IbcDest {
+  const timeoutTimestamp = calcIbcTimeoutTimestamp(new Date(), opts.transferTimeoutOffsetSeconds);
 
   return {
     sourceChannel: opts.channel,
