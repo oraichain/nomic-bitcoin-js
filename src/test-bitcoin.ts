@@ -6,39 +6,22 @@ import {
   SigSet,
   IbcDest,
   encode,
-  toNetwork,
   calcIbcTimeoutTimestamp,
-  getSigset,
   getSigsetRest,
 } from ".";
 import { sha256 } from "bitcoinjs-lib/src/crypto";
-import ECPairFactory from "ecpair";
 import { toASM } from "bitcoinjs-lib/src/script";
 import { witnessStackToScriptWitness } from "./witness_stack_to_script_witness";
 import { broadcast } from "./blockstream_utils";
-import { exit } from "process";
+import { assert } from "console";
 
 const makeSigsets = (
   xprivs: string[],
   voting_powers: number[],
   index: number,
   network: btc.networks.Network,
-  threshold: [number, number],
-  pubkeys?: number[][]
+  threshold: [number, number]
 ): SigSet => {
-  if (pubkeys) {
-    return {
-      signatories: pubkeys.map((pk, i) => ({
-        pubkey: pk,
-        voting_power: voting_powers[i],
-      })),
-      index,
-      bridgeFeeRate: 0,
-      depositsEnabled: true,
-      minerFeeRate: 0,
-      threshold,
-    };
-  }
   const bip32 = BIP32Factory(ecc);
   let signatories = [] as Array<{ voting_power: number; pubkey: number[] }>;
   for (let i = 0; i < xprivs.length; i++) {
@@ -90,69 +73,6 @@ const possibleHours = [
   "23",
 ];
 
-function permuteAll(arr: string[]): string[][] {
-  const permutations: string[][] = [];
-  const stack: [string[], number][] = [[[], 0]];
-
-  while (stack.length > 0) {
-    const [currentPermutation, index] = stack.pop()!;
-
-    if (index === arr.length) {
-      permutations.push(currentPermutation.slice()); // Deep copy to avoid mutation
-      continue;
-    }
-
-    for (let i = 0; i < arr.length; i++) {
-      if (!currentPermutation.includes(arr[i])) {
-        const nextPermutation = currentPermutation.slice(); // Deep copy
-        nextPermutation.push(arr[i]);
-        stack.push([nextPermutation, index + 1]);
-      }
-    }
-  }
-
-  return permutations;
-}
-
-function permuteWithoutElement(
-  arr: string[],
-  elementToRemove: string
-): string[][] {
-  const permutations: string[][] = [];
-  if (arr.length === 1) {
-    return [[arr[0]]];
-  }
-
-  for (let i = 0; i < arr.length; i++) {
-    const currentElement = arr[i];
-    // Skip the element to remove
-    if (currentElement === elementToRemove) {
-      continue;
-    }
-
-    const remaining = arr.slice(0, i).concat(arr.slice(i + 1));
-    const subPermutations = permuteWithoutElement(remaining, elementToRemove);
-
-    // Add the current element to the beginning of each sub-permutation
-    subPermutations.forEach((permutation) => {
-      permutations.push([currentElement, ...permutation]);
-    });
-  }
-
-  return permutations;
-}
-
-function permuteAllWithoutElement(arr: string[]): string[][] {
-  const allPermutations: string[][] = [];
-  arr.forEach((elementToRemove) => {
-    const remaining = arr.slice();
-    remaining.splice(remaining.indexOf(elementToRemove), 1);
-    const permutations = permuteWithoutElement(remaining, elementToRemove);
-    allPermutations.push(...permutations);
-  });
-  return allPermutations;
-}
-
 const main = async () => {
   // This is just my test private key on my local machine, not on the server
   // const xprivs = ["tprv8ZgxMBicQKsPdk95xiZzD8EpKc1699Q7TqCpAJevpzdxeD4s9pgXyEq8E7DW7X4htC5s4GcFG41Gr5mhjwLzHHuqfU7aedDbEiUvcyd5CcW"
@@ -160,10 +80,55 @@ const main = async () => {
     process.env.NETWORK === "bitcoin"
       ? btc.networks.bitcoin
       : btc.networks.testnet;
-  const threshold = network === btc.networks.testnet ? [9, 10] : [2, 3];
-  for (let i = 0; i < 16; i++) {
+  const btcReceiver = process.env.BTC_RECEIVER;
+  if (!btcReceiver)
+    throw "Must have a bitcoin receiver address to run this script!";
+
+  const xprivs = process.env.XPRIVS?.split(",") as string[];
+  let threshold: [number, number] = [2, 3];
+  let possibleTimestamps = [1706616000000000000n, 1706619600000000000n];
+  // in other cases, we need to replace the address and input hash with other values
+  let correctOutputScripts = [
+    {
+      address: "bc1q7qclstltzgl052rue3lj5xs03fxc04tttaefle58ad0a88ttfn7svp83hx",
+      inputTxHash:
+        "63236f1c7b8d58fc376cc7643cd3ab5e878a9ffa6fa6763661b5ebb20ef45f4e",
+    },
+    {
+      address: "bc1qr9g7884lqddvs5azktf3kwh3q0lqu4y3rvmrt453z37ek9fz4s0s33ce8y",
+      inputTxHash:
+        "4a66f63968574e7935b56112c27a85a37d2a5d77d9736fcd81300b84f42d64c0",
+    },
+  ];
+  // in other cases, we need to replace the sigset index & ibc info, as the pub keys of the sigset are created based on the sigset index
+  let correctSigsetIndexes = [6, 7];
+  let ibcInfo = {
+    receiver: "orai1varcr599506axhv62gdc5wmlqcy905a4723yrc",
+    sender: "oraibtc1varcr599506axhv62gdc5wmlqcy905a45qp2j8",
+    sourceChannel: "channel-1",
+  };
+  if (network === btc.networks.testnet) {
+    threshold = [9, 10];
+    possibleTimestamps = possibleHours.map((item) =>
+      calcIbcTimeoutTimestamp(new Date(`2024-02-26T${item}:00:00.000Z`))
+    );
+    correctOutputScripts = [
+      {
+        address:
+          "tb1qhm20plkgsvpj8wcrc689qtt72pp0tx935pc53xheqwyyymzw5c5q003y0s",
+        inputTxHash:
+          "33e118f86cc59436ab717681b72f2df0b4f356c24b5feedb0b37dc7ab22ffe4c",
+      },
+    ];
+    ibcInfo = {
+      receiver: "orai1rchnkdpsxzhquu63y6r4j4t57pnc9w8ehdhedx",
+      sender: "oraibtc1rchnkdpsxzhquu63y6r4j4t57pnc9w8ea88hue",
+      sourceChannel: "channel-0",
+    };
+  }
+  for (const sigsetIndex of correctSigsetIndexes) {
     const sigsetData = JSON.parse(
-      await getSigsetRest(process.env.LCD as string, i)
+      await getSigsetRest(process.env.LCD as string, sigsetIndex)
     );
     const sigset: SigSet = {
       ...sigsetData.sigset,
@@ -173,31 +138,29 @@ const main = async () => {
       })),
       threshold,
     };
-    console.log("sigset: ", sigset);
-    const possibleTimestamps =
-      network === btc.networks.testnet
-        ? possibleHours.map((item) =>
-            calcIbcTimeoutTimestamp(new Date(`2024-02-26T${item}:00:00.000Z`))
-          )
-        : [1706616000000000000n, 1706619600000000000n];
-    const correctOutputScripts =
-      network === btc.networks.testnet
-        ? ["tb1qhm20plkgsvpj8wcrc689qtt72pp0tx935pc53xheqwyyymzw5c5q003y0s"]
-        : [
-            "bc1qr9g7884lqddvs5azktf3kwh3q0lqu4y3rvmrt453z37ek9fz4s0s33ce8y",
-            "bc1q7qclstltzgl052rue3lj5xs03fxc04tttaefle58ad0a88ttfn7svp83hx",
-          ];
-    const ibcInfo = btc.networks.testnet
-      ? {
-          receiver: "orai1rchnkdpsxzhquu63y6r4j4t57pnc9w8ehdhedx",
-          sender: "oraibtc1rchnkdpsxzhquu63y6r4j4t57pnc9w8ea88hue",
-          sourceChannel: "channel-0",
-        }
-      : {
-          receiver: "orai1varcr599506axhv62gdc5wmlqcy905a4723yrc",
-          sender: "oraibtc1varcr599506axhv62gdc5wmlqcy905a45qp2j8",
-          sourceChannel: "channel-1",
-        };
+    const sigsetFromPrivKeys = makeSigsets(
+      xprivs,
+      sigset.signatories.map((signatory) => signatory.voting_power),
+      sigsetIndex,
+      network,
+      threshold
+    );
+    // make sure the queried sigset matches with the sigset created by our private keys so that we can spend the script
+    // order is important!
+    assert(sigset.threshold === sigsetFromPrivKeys.threshold);
+    assert(sigset.signatories.length === sigsetFromPrivKeys.signatories.length);
+    for (let i = 0; i < sigset.signatories.length; i++) {
+      const signatoryFromPriv = sigsetFromPrivKeys.signatories[i];
+      const signatory = sigset.signatories[i];
+      assert(
+        JSON.stringify(signatory.pubkey) ===
+          JSON.stringify(signatoryFromPriv.pubkey)
+      );
+      assert(
+        JSON.stringify(signatory.voting_power) ===
+          JSON.stringify(signatoryFromPriv.voting_power)
+      );
+    }
 
     for (const timestamp of possibleTimestamps) {
       const ibcDest: IbcDest = {
@@ -206,100 +169,103 @@ const main = async () => {
         ...ibcInfo,
         sourcePort: "transfer",
       };
-      const script = redeemScript(sigset, sha256(encode(ibcDest)));
+      const script = redeemScript(sigsetFromPrivKeys, sha256(encode(ibcDest)));
 
       let data = btc.payments.p2wsh({
         redeem: { output: script, redeemVersion: 0 },
         network,
       });
-      console.log(
-        `Address: ${data.address}\nHash: ${data.hash?.toString(
-          "hex"
-        )}, Output: ${data.output?.toString("hex")}\nAsm script: ${toASM(
-          data.redeem?.output as Buffer
-        )}`
-      );
+      console.log(`Address: ${data.address}\n`);
       // console.log("=======================================");
       // console.log(`Script in hex: ${script.toString("hex")}\n`);
-      if (data.address && correctOutputScripts.includes(data.address)) {
-        console.log("found it!!!!!", data.address);
-        exit(0);
+      const correctInputScriptIndex = correctOutputScripts.findIndex(
+        (output) => output.address === data.address
+      );
+      if (data.address && correctInputScriptIndex !== -1) {
+        console.log(
+          "found it!!!!!",
+          data.address,
+          correctOutputScripts[correctInputScriptIndex].address,
+          timestamp
+        );
+        const spendAmountInSats = 10000;
+        const withdrawAmountInSats = 9000;
+        const feeForTransactionInSats = 1000;
+
+        const psbt = new btc.Psbt({
+          network,
+        });
+        psbt.addInput({
+          hash: correctOutputScripts[correctInputScriptIndex].inputTxHash,
+          index: 0,
+          witnessUtxo: {
+            script: data.output!,
+            value: spendAmountInSats,
+          },
+          witnessScript: script,
+        });
+        psbt.addOutput({
+          address: btcReceiver,
+          value: withdrawAmountInSats,
+        });
+        // add redundant amount back to previous address
+        psbt.addOutput({
+          address: data.address!,
+          value:
+            spendAmountInSats - withdrawAmountInSats - feeForTransactionInSats,
+        });
+        const bip32 = BIP32Factory(ecc);
+        for (const xpriv of xprivs) {
+          const node = bip32.fromBase58(xpriv, network);
+          psbt.signInput(0, node.derive(sigsetIndex));
+        }
+        psbt.finalizeInput(0, (inputIndex: number, psbtInput: any) => {
+          const redeemPayment = btc.payments.p2wsh({
+            /**
+             * Nếu như thứ tự tạo redeem_script là
+             * pubkey1 OP_CHECKSIG
+             * OP_IF
+             * ...
+             * OP_SWAP
+             * pubkey2 OP_CHECKSIG
+             * OP_IF
+             * ...
+             * OP_SWAP
+             * pubkey3 OP_CHECKSIG
+             * OP_IF
+             * ...
+             *
+             * Thì thứ tự put signature vào input sẽ phải là
+             * signature pubkey 3 - index 0
+             * signature pubkey 2 - index 1
+             * signature pubkey 1 - index 2
+             */
+            redeem: {
+              input: btc.script.compile(
+                psbtInput.partialSig
+                  .map((item: any) => item.signature)
+                  .reverse()
+              ), // Make sure to be putted in a correct orders
+              output: psbtInput.witnessScript,
+            },
+          });
+          const finalScriptWitness = witnessStackToScriptWitness(
+            redeemPayment.witness ?? []
+          );
+
+          return {
+            finalScriptSig: Buffer.from(""),
+            finalScriptWitness: finalScriptWitness,
+          };
+        });
+
+        const tx = psbt.extractTransaction();
+        console.log(`Broadcasting Transaction Hex: ${tx.toHex()}`);
+        // const txid = await broadcast(tx.toHex());
+        // console.log(`Success! Txid is ${txid}`);
       }
     }
   }
-
-  //   const spendAmountInSats = 10000;
-  //   const withdrawAmountInSats = 9000;
-  //   const feeForTransactionInSats = 1000;
-
-  //   const psbt = new btc.Psbt({
-  //     network: btc.networks.testnet,
-  //   });
-  //   psbt.addInput({
-  //     hash: "33e118f86cc59436ab717681b72f2df0b4f356c24b5feedb0b37dc7ab22ffe4c",
-  //     index: 0,
-  //     witnessUtxo: {
-  //       script: data.output!,
-  //       value: spendAmountInSats,
-  //     },
-  //     witnessScript: script,
-  //   });
-  //   psbt.addOutput({
-  //     address: "tb1q80yacawds7fs9spcn7e6c050vprgu5e8lw83p5",
-  //     value: withdrawAmountInSats,
-  //   });
-  //   // add redundant amount back to previous address
-  //   psbt.addOutput({
-  //     address: data.address!,
-  //     value: spendAmountInSats - withdrawAmountInSats - feeForTransactionInSats,
-  //   });
-  //   const bip32 = BIP32Factory(ecc);
-  //   for (const xpriv of xprivs) {
-  //     const node = bip32.fromBase58(xpriv, btc.networks.testnet);
-  //     psbt.signInput(0, node.derive(sigsetIndex));
-  //   }
-  //   psbt.finalizeInput(0, (inputIndex: number, psbtInput: any) => {
-  //     const redeemPayment = btc.payments.p2wsh({
-  //       /**
-  //        * Nếu như thứ tự tạo redeem_script là
-  //        * pubkey1 OP_CHECKSIG
-  //        * OP_IF
-  //        * ...
-  //        * OP_SWAP
-  //        * pubkey2 OP_CHECKSIG
-  //        * OP_IF
-  //        * ...
-  //        * OP_SWAP
-  //        * pubkey3 OP_CHECKSIG
-  //        * OP_IF
-  //        * ...
-  //        *
-  //        * Thì thứ tự put signature vào input sẽ phải là
-  //        * signature pubkey 3 - index 0
-  //        * signature pubkey 2 - index 1
-  //        * signature pubkey 1 - index 2
-  //        */
-  //       redeem: {
-  //         input: btc.script.compile(
-  //           psbtInput.partialSig.map((item: any) => item.signature).reverse()
-  //         ), // Make sure to be putted in a correct orders
-  //         output: psbtInput.witnessScript,
-  //       },
-  //     });
-  //     const finalScriptWitness = witnessStackToScriptWitness(
-  //       redeemPayment.witness ?? []
-  //     );
-
-  //     return {
-  //       finalScriptSig: Buffer.from(""),
-  //       finalScriptWitness: finalScriptWitness,
-  //     };
-  //   });
-
-  //   const tx = psbt.extractTransaction();
-  //   console.log(`Broadcasting Transaction Hex: ${tx.toHex()}`);
-  //   const txid = await broadcast(tx.toHex());
-  //   console.log(`Success! Txid is ${txid}`);
 };
 
 main();

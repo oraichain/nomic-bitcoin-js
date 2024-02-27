@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from "axios";
 
 const blockstream = new axios.Axios({
-    baseURL: `https://blockstream.info/testnet/api`
+    baseURL: process.env.BTC_BROADCAST_URL || "https://blockstream.info/api"
 });
 
 export async function waitUntilUTXO(address: string) {
