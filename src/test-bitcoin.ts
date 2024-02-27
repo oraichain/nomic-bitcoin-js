@@ -8,6 +8,8 @@ import {
   encode,
   toNetwork,
   calcIbcTimeoutTimestamp,
+  getSigset,
+  getSigsetRest,
 } from ".";
 import { sha256 } from "bitcoinjs-lib/src/crypto";
 import ECPairFactory from "ecpair";
@@ -158,88 +160,70 @@ const main = async () => {
     process.env.NETWORK === "bitcoin"
       ? btc.networks.bitcoin
       : btc.networks.testnet;
-  const initialXprivs = process.env.XPRIVS?.split(",") as string[];
-  const xprivsPermut = permuteAll(initialXprivs);
-  const threshold: [number, number] =
-    network === btc.networks.testnet ? [9, 10] : [2, 3];
-  const votingPower = network === btc.networks.testnet ? 10000000000 : 10;
-  const sigsetMaxIndex = 16;
-  const possibleTimestamps =
-    network === btc.networks.testnet
-      ? possibleHours.map((item) =>
-          calcIbcTimeoutTimestamp(new Date(`2024-02-26T${item}:00:00.000Z`))
-        )
-      : [1706616000000000000n, 1706619600000000000n];
-  const correctOutputScripts =
-    network === btc.networks.testnet
-      ? ["tb1qhm20plkgsvpj8wcrc689qtt72pp0tx935pc53xheqwyyymzw5c5q003y0s"]
-      : [
-          "bc1qr9g7884lqddvs5azktf3kwh3q0lqu4y3rvmrt453z37ek9fz4s0s33ce8y",
-          "bc1q7qclstltzgl052rue3lj5xs03fxc04tttaefle58ad0a88ttfn7svp83hx",
-        ];
-  const ibcInfo = btc.networks.testnet
-    ? {
-        receiver: "orai1rchnkdpsxzhquu63y6r4j4t57pnc9w8ehdhedx",
-        sender: "oraibtc1rchnkdpsxzhquu63y6r4j4t57pnc9w8ea88hue",
-        sourceChannel: "channel-0",
-      }
-    : {
-        receiver: "orai1varcr599506axhv62gdc5wmlqcy905a4723yrc",
-        sender: "oraibtc1varcr599506axhv62gdc5wmlqcy905a45qp2j8",
-        sourceChannel: "channel-1",
-      };
-
-  for (const xprivs of xprivsPermut) {
-    for (let i = 0; i < sigsetMaxIndex; i++) {
-      for (const timestamp of possibleTimestamps) {
-        const voting_powers = xprivs.map((x) => votingPower);
-        const sigsetIndex = i;
-        const sigsets = makeSigsets(
-          xprivs,
-          voting_powers,
-          sigsetIndex,
-          network,
-          threshold,
-          network === btc.networks.testnet
-            ? [
-                [
-                  3, 151, 122, 98, 185, 145, 105, 5, 19, 86, 154, 149, 100, 93,
-                  38, 223, 56, 209, 80, 143, 161, 46, 66, 7, 111, 146, 78, 139,
-                  150, 206, 230, 162, 94,
-                ],
-                [
-                  2, 79, 99, 98, 117, 17, 27, 176, 162, 102, 108, 56, 14, 190,
-                  233, 53, 197, 140, 151, 228, 65, 142, 97, 75, 74, 75, 242,
-                  206, 109, 198, 201, 193, 145,
-                ],
-              ]
-            : undefined
-        );
-        const ibcDest: IbcDest = {
-          timeoutTimestamp: timestamp,
-          memo: "",
-          ...ibcInfo,
-          sourcePort: "transfer",
-        };
-        const script = redeemScript(sigsets, sha256(encode(ibcDest)));
-
-        let data = btc.payments.p2wsh({
-          redeem: { output: script, redeemVersion: 0 },
-          network,
-        });
-        console.log(
-          `Address: ${data.address}\nHash: ${data.hash?.toString(
-            "hex"
-          )}, Output: ${data.output?.toString("hex")}\nAsm script: ${toASM(
-            data.redeem?.output as Buffer
-          )}`
-        );
-        // console.log("=======================================");
-        // console.log(`Script in hex: ${script.toString("hex")}\n`);
-        if (data.address && correctOutputScripts.includes(data.address)) {
-          console.log("found it!!!!!", data.address);
-          exit(0);
+  const threshold = network === btc.networks.testnet ? [9, 10] : [2, 3];
+  for (let i = 0; i < 16; i++) {
+    const sigsetData = JSON.parse(
+      await getSigsetRest(process.env.LCD as string, i)
+    );
+    const sigset: SigSet = {
+      ...sigsetData.sigset,
+      signatories: sigsetData.sigset.signatories.map((signatory: any) => ({
+        ...signatory,
+        pubkey: signatory.pubkey.bytes,
+      })),
+      threshold,
+    };
+    console.log("sigset: ", sigset);
+    const possibleTimestamps =
+      network === btc.networks.testnet
+        ? possibleHours.map((item) =>
+            calcIbcTimeoutTimestamp(new Date(`2024-02-26T${item}:00:00.000Z`))
+          )
+        : [1706616000000000000n, 1706619600000000000n];
+    const correctOutputScripts =
+      network === btc.networks.testnet
+        ? ["tb1qhm20plkgsvpj8wcrc689qtt72pp0tx935pc53xheqwyyymzw5c5q003y0s"]
+        : [
+            "bc1qr9g7884lqddvs5azktf3kwh3q0lqu4y3rvmrt453z37ek9fz4s0s33ce8y",
+            "bc1q7qclstltzgl052rue3lj5xs03fxc04tttaefle58ad0a88ttfn7svp83hx",
+          ];
+    const ibcInfo = btc.networks.testnet
+      ? {
+          receiver: "orai1rchnkdpsxzhquu63y6r4j4t57pnc9w8ehdhedx",
+          sender: "oraibtc1rchnkdpsxzhquu63y6r4j4t57pnc9w8ea88hue",
+          sourceChannel: "channel-0",
         }
+      : {
+          receiver: "orai1varcr599506axhv62gdc5wmlqcy905a4723yrc",
+          sender: "oraibtc1varcr599506axhv62gdc5wmlqcy905a45qp2j8",
+          sourceChannel: "channel-1",
+        };
+
+    for (const timestamp of possibleTimestamps) {
+      const ibcDest: IbcDest = {
+        timeoutTimestamp: timestamp,
+        memo: "",
+        ...ibcInfo,
+        sourcePort: "transfer",
+      };
+      const script = redeemScript(sigset, sha256(encode(ibcDest)));
+
+      let data = btc.payments.p2wsh({
+        redeem: { output: script, redeemVersion: 0 },
+        network,
+      });
+      console.log(
+        `Address: ${data.address}\nHash: ${data.hash?.toString(
+          "hex"
+        )}, Output: ${data.output?.toString("hex")}\nAsm script: ${toASM(
+          data.redeem?.output as Buffer
+        )}`
+      );
+      // console.log("=======================================");
+      // console.log(`Script in hex: ${script.toString("hex")}\n`);
+      if (data.address && correctOutputScripts.includes(data.address)) {
+        console.log("found it!!!!!", data.address);
+        exit(0);
       }
     }
   }

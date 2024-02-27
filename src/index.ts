@@ -69,8 +69,12 @@ function presentVp(sigset: SigSet) {
   )
 }
 
-async function getSigset(relayer: string) {
+export async function getSigset(relayer: string) {
   return await fetch(`${relayer}/sigset`).then((res) => res.text())
+}
+
+export async function getSigsetRest(lcd: string, index: number) {
+  return await fetch(`${lcd}/bitcoin//sigset?index=${index}`).then((res) => res.text())
 }
 
 export async function getPendingDeposits(
