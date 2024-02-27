@@ -93,11 +93,13 @@ const main = async () => {
       address: "bc1q7qclstltzgl052rue3lj5xs03fxc04tttaefle58ad0a88ttfn7svp83hx",
       inputTxHash:
         "63236f1c7b8d58fc376cc7643cd3ab5e878a9ffa6fa6763661b5ebb20ef45f4e",
+      vout: 10,
     },
     {
       address: "bc1qr9g7884lqddvs5azktf3kwh3q0lqu4y3rvmrt453z37ek9fz4s0s33ce8y",
       inputTxHash:
         "4a66f63968574e7935b56112c27a85a37d2a5d77d9736fcd81300b84f42d64c0",
+      vout: 29,
     },
   ];
   // in other cases, we need to replace the sigset index & ibc info, as the pub keys of the sigset are created based on the sigset index
@@ -118,6 +120,7 @@ const main = async () => {
           "tb1qhm20plkgsvpj8wcrc689qtt72pp0tx935pc53xheqwyyymzw5c5q003y0s",
         inputTxHash:
           "33e118f86cc59436ab717681b72f2df0b4f356c24b5feedb0b37dc7ab22ffe4c",
+        vout: 0,
       },
     ];
     ibcInfo = {
@@ -175,29 +178,36 @@ const main = async () => {
         redeem: { output: script, redeemVersion: 0 },
         network,
       });
-      console.log(`Address: ${data.address}\n`);
+      // console.log(`Address: ${data.address}`);
       // console.log("=======================================");
       // console.log(`Script in hex: ${script.toString("hex")}\n`);
-      const correctInputScriptIndex = correctOutputScripts.findIndex(
+      const correctInputScript = correctOutputScripts.find(
         (output) => output.address === data.address
       );
-      if (data.address && correctInputScriptIndex !== -1) {
+      if (data.address && correctInputScript) {
         console.log(
-          "found it!!!!!",
+          "\nfound it!!!!!",
           data.address,
-          correctOutputScripts[correctInputScriptIndex].address,
+          correctInputScript.address,
           timestamp
         );
-        const spendAmountInSats = 10000;
-        const withdrawAmountInSats = 9000;
+        // FIXME: set the correct sats for 1 BTC here
+        const spendAmountInSats = 10 ** 8;
+        // FIXME: get valid transaction fees for the mainnet
         const feeForTransactionInSats = 1000;
+        const withdrawAmountInSats =
+          spendAmountInSats - feeForTransactionInSats;
+        console.log("withdraw amount: ", withdrawAmountInSats);
+        const remainingAmount =
+          spendAmountInSats - withdrawAmountInSats - feeForTransactionInSats;
+        console.log("remaining amount: ", remainingAmount);
 
         const psbt = new btc.Psbt({
           network,
         });
         psbt.addInput({
-          hash: correctOutputScripts[correctInputScriptIndex].inputTxHash,
-          index: 0,
+          hash: correctInputScript.inputTxHash,
+          index: correctInputScript.vout,
           witnessUtxo: {
             script: data.output!,
             value: spendAmountInSats,
@@ -209,11 +219,12 @@ const main = async () => {
           value: withdrawAmountInSats,
         });
         // add redundant amount back to previous address
-        psbt.addOutput({
-          address: data.address!,
-          value:
-            spendAmountInSats - withdrawAmountInSats - feeForTransactionInSats,
-        });
+        if (remainingAmount > 0) {
+          psbt.addOutput({
+            address: data.address!,
+            value: remainingAmount,
+          });
+        }
         const bip32 = BIP32Factory(ecc);
         for (const xpriv of xprivs) {
           const node = bip32.fromBase58(xpriv, network);
@@ -260,6 +271,7 @@ const main = async () => {
         });
 
         const tx = psbt.extractTransaction();
+        console.log("\nBtc receiver: ", btcReceiver + "\n");
         console.log(`Broadcasting Transaction Hex: ${tx.toHex()}`);
         // const txid = await broadcast(tx.toHex());
         // console.log(`Success! Txid is ${txid}`);
