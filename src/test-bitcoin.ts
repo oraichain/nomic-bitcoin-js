@@ -228,47 +228,50 @@ const main = async () => {
         const bip32 = BIP32Factory(ecc);
         for (const xpriv of xprivs) {
           const node = bip32.fromBase58(xpriv, network);
-          psbt.signInput(0, node.derive(sigsetIndex));
+          psbt.signInput(correctInputScript.vout, node.derive(sigsetIndex));
         }
-        psbt.finalizeInput(0, (inputIndex: number, psbtInput: any) => {
-          const redeemPayment = btc.payments.p2wsh({
-            /**
-             * Nếu như thứ tự tạo redeem_script là
-             * pubkey1 OP_CHECKSIG
-             * OP_IF
-             * ...
-             * OP_SWAP
-             * pubkey2 OP_CHECKSIG
-             * OP_IF
-             * ...
-             * OP_SWAP
-             * pubkey3 OP_CHECKSIG
-             * OP_IF
-             * ...
-             *
-             * Thì thứ tự put signature vào input sẽ phải là
-             * signature pubkey 3 - index 0
-             * signature pubkey 2 - index 1
-             * signature pubkey 1 - index 2
-             */
-            redeem: {
-              input: btc.script.compile(
-                psbtInput.partialSig
-                  .map((item: any) => item.signature)
-                  .reverse()
-              ), // Make sure to be putted in a correct orders
-              output: psbtInput.witnessScript,
-            },
-          });
-          const finalScriptWitness = witnessStackToScriptWitness(
-            redeemPayment.witness ?? []
-          );
+        psbt.finalizeInput(
+          correctInputScript.vout,
+          (inputIndex: number, psbtInput: any) => {
+            const redeemPayment = btc.payments.p2wsh({
+              /**
+               * Nếu như thứ tự tạo redeem_script là
+               * pubkey1 OP_CHECKSIG
+               * OP_IF
+               * ...
+               * OP_SWAP
+               * pubkey2 OP_CHECKSIG
+               * OP_IF
+               * ...
+               * OP_SWAP
+               * pubkey3 OP_CHECKSIG
+               * OP_IF
+               * ...
+               *
+               * Thì thứ tự put signature vào input sẽ phải là
+               * signature pubkey 3 - index 0
+               * signature pubkey 2 - index 1
+               * signature pubkey 1 - index 2
+               */
+              redeem: {
+                input: btc.script.compile(
+                  psbtInput.partialSig
+                    .map((item: any) => item.signature)
+                    .reverse()
+                ), // Make sure to be putted in a correct orders
+                output: psbtInput.witnessScript,
+              },
+            });
+            const finalScriptWitness = witnessStackToScriptWitness(
+              redeemPayment.witness ?? []
+            );
 
-          return {
-            finalScriptSig: Buffer.from(""),
-            finalScriptWitness: finalScriptWitness,
-          };
-        });
+            return {
+              finalScriptSig: Buffer.from(""),
+              finalScriptWitness: finalScriptWitness,
+            };
+          }
+        );
 
         const tx = psbt.extractTransaction();
         console.log("\nBtc receiver: ", btcReceiver + "\n");
