@@ -162,7 +162,7 @@ const main = async () => {
   const xprivsPermut = permuteAll(initialXprivs);
   const threshold: [number, number] =
     network === btc.networks.testnet ? [9, 10] : [2, 3];
-  const votingPower = network === btc.networks.testnet ? 10000000000 : 1000;
+  const votingPower = network === btc.networks.testnet ? 10000000000 : 10;
   const sigsetMaxIndex = 16;
   const possibleTimestamps =
     network === btc.networks.testnet
