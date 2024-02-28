@@ -228,10 +228,10 @@ const main = async () => {
         const bip32 = BIP32Factory(ecc);
         for (const xpriv of xprivs) {
           const node = bip32.fromBase58(xpriv, network);
-          psbt.signInput(correctInputScript.vout, node.derive(sigsetIndex));
+          psbt.signInput(0, node.derive(sigsetIndex));
         }
         psbt.finalizeInput(
-          correctInputScript.vout,
+          0,
           (inputIndex: number, psbtInput: any) => {
             const redeemPayment = btc.payments.p2wsh({
               /**
