@@ -1,6 +1,6 @@
 import { getMnemonic } from "./helpers/utils";
 import { connect } from "./helpers/connect";
-import { OraichainConfig, OraiBtcLocalConfig } from "./network";
+import { OraichainConfig, OraiBtcMainnetConfig } from "./network";
 import Long from "long";
 import { fromBech32, toBech32 } from "@cosmjs/encoding";
 import { Decimal } from "@cosmjs/math";
@@ -10,7 +10,7 @@ async function main(): Promise<void> {
   // get the mnemonic
   const mnemonic = getMnemonic();
   const globalConfig = {
-    amount: 5000, // sats
+    amount: 10_000_000_000, // here is 1000 sats
     bitcoinAddress: "bc1qc6pw50rgq43vcznfzy5rgykgcdd9nkf2swdx9d",
     timeout: 3600,
     obtcAddress:
@@ -26,9 +26,10 @@ async function main(): Promise<void> {
   const addressData = fromBech32(address).data;
   const addressWithRightPrefix = toBech32(OraichainConfig.prefix, addressData);
   const destAddressWithRightPrefix = toBech32(
-    OraiBtcLocalConfig.prefix,
+    OraiBtcMainnetConfig.prefix,
     addressData
   );
+  console.log(addressWithRightPrefix, destAddressWithRightPrefix);
 
   const tx = await client.execute(
     addressWithRightPrefix,
