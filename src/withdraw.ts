@@ -11,14 +11,14 @@ async function main(): Promise<void> {
   const mnemonic = getMnemonic();
   const globalConfig = {
     amount: 5000, // sats
-    bitcoinAddress: "bc1qewgfymc9ssrszh7dh202rtsgz3yjzvyyuc9lel",
+    bitcoinAddress: "bc1qc6pw50rgq43vcznfzy5rgykgcdd9nkf2swdx9d",
     timeout: 3600,
     obtcAddress:
       "orai10g6frpysmdgw5tdqke47als6f97aqmr8s3cljsvjce4n5enjftcqtamzsd",
     senderChain: {
       port: "wasm.orai195269awwnt5m6c843q6w7hp8rt0k7syfu9de4h0wz384slshuzps8y7ccm",
-      channelId: "channel-188",
-      denom: "obtc",
+      channelId: "channel-227",
+      denom: "usat",
     },
   };
 
