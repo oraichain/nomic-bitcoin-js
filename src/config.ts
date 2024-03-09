@@ -3,6 +3,7 @@ dotenv.config();
 
 export const userConfig = {
   WALLET_PREFIX: process.env.WALLET_PREFIX || "oraibtc",
+  DISCORD_WEBHOOK_URL: process.env.DISCORD_WEBHOOK_URL,
 };
 
 export const networkConfig = {

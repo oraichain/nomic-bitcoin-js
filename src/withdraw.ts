@@ -10,8 +10,8 @@ async function main(): Promise<void> {
   // get the mnemonic
   const mnemonic = getMnemonic();
   const globalConfig = {
-    amount: 10_000_000_000, // here is 1000 sats
-    bitcoinAddress: "bc1qc6pw50rgq43vcznfzy5rgykgcdd9nkf2swdx9d",
+    amount: 400, // here is 400 * 10^6 BTC
+    bitcoinAddress: "bc1qmmvywqre8hsgnphn7uqyfpapx5lhye0xd0e6z7",
     timeout: 3600,
     obtcAddress:
       "orai10g6frpysmdgw5tdqke47als6f97aqmr8s3cljsvjce4n5enjftcqtamzsd",
@@ -37,10 +37,7 @@ async function main(): Promise<void> {
     {
       send: {
         contract: globalConfig.senderChain.port.split(".")[1],
-        amount: Decimal.fromAtomics(
-          globalConfig.amount.toString(),
-          8
-        ).toString(),
+        amount: globalConfig.amount.toString(),
         msg: toBinary({
           local_channel_id: globalConfig.senderChain.channelId,
           remote_address: destAddressWithRightPrefix,
