@@ -2,6 +2,9 @@ import { serializeError } from "serialize-error";
 import { networkConfig, userConfig } from "./config";
 import { WebhookClient } from "discord.js";
 
+const checkpointFeesInterval = 5; // 3 hours
+const sleepTime = 60000; // 1 mins
+
 const detectCheckpointNotEnoughFees = async (currentIndex: number) => {
   const currentCheckpointFees = await fetch(
     `${networkConfig.LCD}/bitcoin/checkpoint_fee_info?checkpoint_index=${currentIndex}`
@@ -20,8 +23,6 @@ const detectCheckpointNotEnoughFees = async (currentIndex: number) => {
     minerFees: currentCheckpointFees.miner_fee,
   };
 };
-
-const checkpointFeesInterval = 5; // 3 hours
 
 const milliToHour = (timestamp: number) => {
   return timestamp / 1000 / 60 / 60;
@@ -62,7 +63,7 @@ const main = async () => {
       await webhookClient.send(JSON.stringify(serializeError(error)));
       // TODO: send to discord
     } finally {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, sleepTime));
     }
   }
 };
