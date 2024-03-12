@@ -50,7 +50,7 @@ const alertConfirmedCheckpoints = async (prevLastConfirmedIndex: number) => {
   // collect next confirmed indexes that we have not alerted yet
   for (
     let i = prevLastConfirmedIndex + 1;
-    i <= currentLastConfirmedIndex;
+    i <= currentLastConfirmedIndex.last_confirmed_index;
     i++
   ) {
     listNewConfirmedIndexes.push(i);
