@@ -69,7 +69,7 @@ function presentVp(sigset: SigSet) {
   )
 }
 
-async function getSigset(relayer: string) {
+export async function getSigset(relayer: string) {
   return await fetch(`${relayer}/sigset`).then((res) => res.text())
 }
 
@@ -110,6 +110,8 @@ function getTruncation(sigset: SigSet, targetPrecision: number) {
   }
   return vpBits - targetPrecision
 }
+
+
 
 function pushInt(n: bigint) {
   return btc.script.number.encode(Number(n))
@@ -161,7 +163,7 @@ function redeemScript(sigset: SigSet, dest: Buffer) {
   return btc.script.compile(script as any)
 }
 
-async function broadcast(
+export async function broadcast(
   relayer: string,
   depositAddr: string,
   sigsetIndex: number,
@@ -205,6 +207,19 @@ function makeIbcDest(opts: DepositOptions): IbcDest {
     memo: opts.memo || '',
     timeoutTimestamp,
   }
+}
+
+export function calcIbcTimeoutTimestamp(date: Date, transferTimeoutOffsetSeconds?: number) {
+  const now = date.getTime();
+  let timeoutTimestampMs
+  if (typeof transferTimeoutOffsetSeconds === 'undefined') {
+    timeoutTimestampMs =
+      now + oneDaySeconds * 5 * 1000 - (now % (60 * 60 * 1000))
+  } else {
+    timeoutTimestampMs = now + transferTimeoutOffsetSeconds * 1000
+  }
+
+  return BigInt(timeoutTimestampMs) * 1000000n
 }
 
 function toNetwork(network: BitcoinNetwork | undefined) {
