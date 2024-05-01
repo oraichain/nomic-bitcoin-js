@@ -1,13 +1,12 @@
 {
-  "name": "nomic-bitcoin",
+  "name": "@oraichain/orai-bitcoin",
   "version": "2.0.0",
   "description": "A JavaScript library for accepting Bitcoin deposits with Interchain Deposits to any IBC-enabled blockchain, powered by Nomic.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "node esbuild.config.js",
-    "test": "",
-    "prepublishOnly": "npm run build"
+    "build": "tsc",
+    "test": ""
   },
   "keywords": [],
   "author": "Nomic",
@@ -26,7 +25,6 @@
     "buffer": "^6.0.3",
     "deepmerge": "^4.3.1",
     "dotenv": "^16.3.1",
-    "esbuild": "^0.19.8",
     "qr-code-styling": "^1.6.0-rc.1",
     "serialize-error": "^8.1.0",
     "varuint-bitcoin": "^1.1.2"

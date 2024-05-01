@@ -7,6 +7,9 @@
     "strict": true,
     "declaration": true,
     "outDir": "dist",
-    "skipLibCheck": true
-  }
+    "skipLibCheck": true,
+  },
+  "files": [
+    "src/index.ts"
+  ],
 }
