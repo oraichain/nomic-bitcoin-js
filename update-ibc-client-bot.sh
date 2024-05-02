@@ -28,6 +28,7 @@ while true; do
         sleep 86400
     else
         # Sleep for 1 hour (3600 seconds)
+        echo "Sleeping for 1 hour..."
         sleep 3600
     fi
 done
