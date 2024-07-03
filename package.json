@@ -12,7 +12,6 @@
   "author": "Nomic",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^14.14.1",
     "@cosmjs/amino": "0.32.1",
     "@cosmjs/cosmwasm-stargate": "^0.32.1",
     "@cosmjs/encoding": "^0.31.1",
@@ -23,7 +22,10 @@
     "bitcoin-core": "^4.1.0",
     "bitcoinjs-lib": "^6.1.3",
     "buffer": "^6.0.3",
+    "colorize": "^0.1.0",
+    "colorize-node": "^0.5.1",
     "deepmerge": "^4.3.1",
+    "discord.js": "^14.14.1",
     "dotenv": "^16.3.1",
     "qr-code-styling": "^1.6.0-rc.1",
     "serialize-error": "^8.1.0",

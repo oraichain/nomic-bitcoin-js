@@ -646,6 +646,16 @@ cipher-base@^1.0.1:
     inherits "^2.0.1"
     safe-buffer "^5.0.1"
 
+colorize-node@^0.5.1:
+  version "0.5.1"
+  resolved "https://registry.yarnpkg.com/colorize-node/-/colorize-node-0.5.1.tgz#e877e871a70e086a98c2c253e684b579a53b72ba"
+  integrity sha512-NEiJgkr1bRpy7ZNiDGN3vYRSMwVHrgaRSYZPOIYDA5VpFXyp0o3ZH+ZuW5lLQ0O7d5Xooqcg7djXIfdtx6U4nw==
+
+colorize@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/colorize/-/colorize-0.1.0.tgz#9a567428fc581ca2fe0baf10aec7c7969150608a"
+  integrity sha512-M+Z3My4+EhwCl4hD0lJ07vyqr1KQDGMd5wIET/JYPYCyADt2tvTmlWs7O8Ugi0vEykX4qnBLSPc3hjFWR628zw==
+
 combined-stream@^1.0.6, combined-stream@^1.0.8, combined-stream@~1.0.6:
   version "1.0.8"
   resolved "https://registry.yarnpkg.com/combined-stream/-/combined-stream-1.0.8.tgz#c3d45a8b34fd730631a110a8a2520682b31d5a7f"

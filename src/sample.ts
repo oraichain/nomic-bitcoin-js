@@ -18,6 +18,7 @@ const sampleGetDepositAddress = async () => {
     network: networkConfig.NETWORK,
     receiver, // bech32 address of the depositing user,
     sender,
+    transferTimeoutOffsetSeconds: 60,
   } as DepositOptions;
 
   const btcAddressToDeposit = (await generateDepositAddress(

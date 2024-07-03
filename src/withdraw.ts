@@ -10,14 +10,14 @@ async function main(): Promise<void> {
   // get the mnemonic
   const mnemonic = getMnemonic();
   const globalConfig = {
-    amount: 400, // here is 400 * 10^6 BTC
-    bitcoinAddress: "bc1qmmvywqre8hsgnphn7uqyfpapx5lhye0xd0e6z7",
-    timeout: 3600,
+    amount: 3600, // here is 400 * 10^6 BTC
+    bitcoinAddress: "bc1q74ftyvlpcjjpzjx9dg45qww4ugrf85tc290hjh",
+    timeout: 60,
     obtcAddress:
       "orai10g6frpysmdgw5tdqke47als6f97aqmr8s3cljsvjce4n5enjftcqtamzsd",
     senderChain: {
       port: "wasm.orai195269awwnt5m6c843q6w7hp8rt0k7syfu9de4h0wz384slshuzps8y7ccm",
-      channelId: "channel-227",
+      channelId: "channel-232",
       denom: "usat",
     },
   };
@@ -30,6 +30,7 @@ async function main(): Promise<void> {
     addressData
   );
   console.log(addressWithRightPrefix, destAddressWithRightPrefix);
+
 
   const tx = await client.execute(
     addressWithRightPrefix,
