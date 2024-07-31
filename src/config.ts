@@ -7,8 +7,8 @@ export const userConfig = {
 };
 
 export const networkConfig = {
-  RELAYERS: [process.env.RELAYER || "https://oraibtc.relayer.orai.io:443"],
-  LCD: [process.env.LCD || "https://oraibtc.lcd.orai.io"],
+  RELAYERS: [process.env.RELAYER || "https://btc.relayer.orai.io"],
+  LCD: [process.env.LCD || "http://127.0.0.1:8000"],
   IBC_CHANNEL: process.env.IBC_CHANNEL || "channel-0",
   NETWORK: process.env.NETWORK || "testnet",
 };
