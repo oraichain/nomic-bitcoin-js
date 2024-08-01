@@ -38,7 +38,7 @@ const main = async () => {
       } else {
         const currentTime = new Date();
         if (
-          currentTime.getUTCHours() === 17 &&
+          currentTime.getUTCHours() === 9 &&
           currentTime.getUTCMinutes() === 0
         ) {
           await webhookClient.send(
